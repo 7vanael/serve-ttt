@@ -2,4 +2,8 @@
   (:require [speclj.core :refer :all]
             [serve-ttt.main :refer :all]))
 
-
+(describe "main serve-ttt"
+  (with-stubs)
+  (it "has a router with routes"
+    (let [routes (.getRoutes router)]
+      (should= 2 (count routes)))))

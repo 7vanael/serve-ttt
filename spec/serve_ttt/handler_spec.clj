@@ -1,8 +1,8 @@
 (ns serve-ttt.handler-spec
-  (:require [speclj.core :refer :all]
+  (:require [clojure.string :as str]
+            [speclj.core :refer :all]
             [serve-ttt.handler :as sut]
-            [serve-ttt.mock-request-spec :refer [mock-request]]
-            [tic-tac-toe.core :refer [initial-state]]))
+            [serve-ttt.mock-request-spec :refer [mock-request]]))
 
 (def board3 [[1 2 "X"]
              [4 "O" 6]
@@ -159,6 +159,17 @@
             cookies  (.getCookies response)]
         (should= "text/html" (get headers "Content-Type"))
         (should= html (String. (.getBody response)))
+        (should (some #(str/includes? % "status=in-progress") cookies))
         (should= 9 (count cookies))))
+    )
+
+  (context "handles the request"
+    (it "calls update-state on the state and creates a response"
+      (let [state    (assoc mock-initial-state :form-data "new-game=start")
+            response (sut/handle-request state)
+            cookies  (.getCookies response)]
+        (should-not-be-nil response)
+        (should-contain "Choose X Player" (String. (.getBody response)))
+        (should (some #(str/includes? % "status=config-x-type") cookies))))
     )
   )

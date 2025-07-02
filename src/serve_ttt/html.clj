@@ -1,47 +1,40 @@
 (ns serve-ttt.html
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [serve-ttt.core :as core]))
 
-(defn render-config-o-difficulty-page []
-  (str "<html><body>"
-       "<h1>Choose O Player Difficulty</h1>"
-       "<form method='POST' action='/ttt'>"
-       "<label><input type='radio' name='o-difficulty' value='easy' checked> Easy</label><br>"
-       "<label><input type='radio' name='o-difficulty' value='medium'> Medium</label><br>"
-       "<label><input type='radio' name='o-difficulty' value='hard'> Hard</label><br>"
-       "<button type='submit'>Next</button>"
-       "</form>"
-       "</body></html>"))
 
-(defn render-config-o-type-page []
-  (str "<html><body>"
-       "<h1>Choose O Player Type</h1>"
-       "<form method='POST' action='/ttt'>"
-       "<label><input type='radio' name='o-type' value='human' checked> Human</label><br>"
-       "<label><input type='radio' name='o-type' value='computer'> Computer</label><br>"
-       "<button type='submit'>Next</button>"
-       "</form>"
-       "</body></html>"))
+(defn radio-option [name value checked?]
+  (str "<label><input type='radio' name='" name "' value='" value "'"
+       (when checked? " checked") "> "
+       (clojure.string/capitalize value) "</label><br>"))
 
-(defn render-config-x-difficulty-page []
+(defn radio-group [name options & {:keys [default-value]}]
+  (let [default (or default-value (first options))]
+    (apply str (map #(radio-option name % (= % default)) options))))
+
+(defn form-page [title form-name options & {:keys [default-value]}]
   (str "<html><body>"
-       "<h1>Choose X Player Difficulty</h1>"
+       "<h1>" title "</h1>"
        "<form method='POST' action='/ttt'>"
-       "<label><input type='radio' name='x-difficulty' value='easy' checked> Easy</label><br>"
-       "<label><input type='radio' name='x-difficulty' value='medium'> Medium</label><br>"
-       "<label><input type='radio' name='x-difficulty' value='hard'> Hard</label><br>"
+       (radio-group form-name options :default-value default-value)
        "<button type='submit'>Next</button>"
        "</form>"
        "</body></html>"))
 
 (defn render-config-x-type-page []
-  (str "<html><body>"
-       "<h1>Choose X Player Type</h1>"
-       "<form method='POST' action='/ttt'>"
-       "<label><input type='radio' name='x-type' value='human' checked> Human</label><br>"
-       "<label><input type='radio' name='x-type' value='computer'> Computer</label><br>"
-       "<button type='submit'>Next</button>"
-       "</form>"
-       "</body></html>"))
+  (form-page "Choose X Player Type" "x-type" core/player-types))
+
+(defn render-config-o-type-page []
+  (form-page "Choose O Player Type" "o-type" core/player-types))
+
+(defn render-config-x-difficulty-page []
+  (form-page "Choose X Player Difficulty" "x-difficulty" core/difficulty-levels))
+
+(defn render-config-o-difficulty-page []
+  (form-page "Choose O Player Difficulty" "o-difficulty" core/difficulty-levels))
+
+(defn render-config-board-page []
+  (form-page "Choose Board Size" "board-size" core/board-sizes))
 
 (defn render-welcome-page []
   (str "<html><body>"
@@ -65,6 +58,7 @@
     :config-x-difficulty (render-config-x-difficulty-page)
     :config-o-type (render-config-o-type-page)
     :config-o-difficulty (render-config-o-difficulty-page)
+    :config-board (render-config-board-page)
     :display (render-display-state state)
 
     (str "<h1>Unknown state: " (:status state) "</h1>")))

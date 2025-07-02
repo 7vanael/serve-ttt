@@ -6,7 +6,7 @@
             [serve-ttt.core :refer [server-name]]
             [serve-ttt.web-interface])
   (:import [Main RouteHandler]
-           [Connection Response Request]))
+           [Connection Response]))
 
 (defn split-on-equals [string]
   (let [[k v] (str/split string #"=" 2)]
@@ -25,7 +25,6 @@
 
 (defn reconstruct-grid [flattened-data]
   (let [count (count flattened-data)]
-    (prn "count:" count)
     (cond
       (= count 9) (->> flattened-data
                        (partition 3)
