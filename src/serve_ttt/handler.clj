@@ -2,11 +2,10 @@
   (:require [clojure.string :as str]
             [tic-tac-toe.core :as ttt-core]
             [serve-ttt.html :refer [create-html]]
-            [serve-ttt.web-interface]
             [serve-ttt.core :refer [server-name]]
             [serve-ttt.web-interface])
   (:import [Main RouteHandler]
-           [Connection Response]))
+           [Connection Response Request]))
 
 (defn split-on-equals [string]
   (let [[k v] (str/split string #"=" 2)]
@@ -97,12 +96,13 @@
     response))
 
 (defn handle-request [state]
+  (prn "state:" state)
   (let [updated-state (ttt-core/update-state state)
         html          (create-html updated-state)]
     (generate-response html updated-state)))
 
-(def ttt-handler
-  (reify RouteHandler
+(deftype TttHandler []
+  RouteHandler
     (handle [this request]
       (let [state (get-game-from-request request)]
-        (handle-request state)))))
+        (handle-request state))))

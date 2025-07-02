@@ -1,16 +1,17 @@
-(ns serve-ttt.mock-request-spec
+(ns serve-ttt.mock-request
   (:import [Connection RequestI]
            (java.util HashMap Map)))
 
 (defn mock-request
-  [method path & {:keys [error-code headers body query-string valid?]
+  [method path & {:keys [error-code headers cookies body query-string valid?]
                   :or {error-code 0
                        headers {}
+                       cookies {}
                        body (byte-array 0)
                        query-string nil
                        valid? true}}]
   (let [headers-map (HashMap. ^Map headers)
-        cookies-map (HashMap.)]
+        cookies-map (HashMap. ^Map cookies)]
     (reify RequestI
       (getMethod [_] method)
       (getPath [_] path)

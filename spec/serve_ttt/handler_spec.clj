@@ -2,7 +2,7 @@
   (:require [clojure.string :as str]
             [speclj.core :refer :all]
             [serve-ttt.handler :as sut]
-            [serve-ttt.mock-request-spec :refer [mock-request]]))
+            [serve-ttt.mock-request :refer [mock-request]]))
 
 (def board3 [[1 2 "X"]
              [4 "O" 6]
@@ -171,5 +171,8 @@
         (should-not-be-nil response)
         (should-contain "Choose X Player" (String. (.getBody response)))
         (should (some #(str/includes? % "status=config-x-type") cookies))))
+
+    (it "handles the request from request object to response object"
+      (let [request (mock-request "POST" "/ttt" )]))
     )
   )

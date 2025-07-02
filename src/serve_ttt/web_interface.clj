@@ -1,11 +1,14 @@
 (ns serve-ttt.web-interface
   (:require [tic-tac-toe.core :as core]
-            [tic-tac-toe.board :refer [new-board]]))
+            [tic-tac-toe.board :refer [new-board]]
+            ))
 
 (defmethod core/start-game :web [state]
   (core/initial-state (:interface state) (:save state)))
 
 (defmethod core/update-state [:web :welcome] [state]
+  ;(let [game (core/load-game state)]
+  ;  (prn "game:" game))
   (if (:form-data state)
     (assoc state :status :config-x-type)
     state))
@@ -38,7 +41,7 @@
   (if-let [o-difficulty (get-in state [:form-data "o-difficulty"])]
     (-> state
         (assoc-in [:players 1 :difficulty] (keyword o-difficulty))
-        (assoc :status :config-board)
+        (assoc :status :select-board)
         (dissoc :form-data))
     state))
 
@@ -47,7 +50,7 @@
    "4x4"   4
    "3x3x3" [3 3 3]})
 
-(defmethod core/update-state [:web :config-board] [state]
+(defmethod core/update-state [:web :select-board] [state]
   (if-let [board-size (get-in state [:form-data "board-size"])]
     (if-let [board-key (get board-size-map board-size)]
       (-> state

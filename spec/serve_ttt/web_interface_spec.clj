@@ -113,7 +113,7 @@
                     :players   [{:play-type :human :difficulty nil} {:play-type :computer :difficulty nil}]}
             result (core/update-state state)]
         (should= :medium (get-in result [:players 1 :difficulty]))
-        (should= :config-board (:status result))
+        (should= :select-board (:status result))
         (should-not-contain :form-data result)))
 
     (it "handles easy difficulty"
@@ -136,7 +136,7 @@
   (context "board configuration"
     (it "sets board configuration and moves to display"
       (let [state  {:interface :web
-                    :status    :config-board
+                    :status    :select-board
                     :form-data {"board-size" "3x3"}
                     :players   [{:play-type :human :difficulty nil} {:play-type :computer :difficulty nil}]}
             result (core/update-state state)]

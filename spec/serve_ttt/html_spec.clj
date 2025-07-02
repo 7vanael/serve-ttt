@@ -4,7 +4,7 @@
 
 (describe "html"
   (it "renders welcome page"
-    (let [html (sut/create-html {:status :welcome})]
+    (let [html (sut/create-html {:status :welcome :save :sql})]
       (should-contain "Welcome to Tic-Tac-Toe!" html)))
 
   (it "renders config x-type page"
@@ -38,7 +38,7 @@
       (should-contain "Choose O Player Difficulty" html)))
 
   (it "renders config board-size page"
-    (let [html (sut/create-html {:status :config-board})]
+    (let [html (sut/create-html {:status :select-board})]
       (should-contain "name='board-size'" html)
       (should-contain "value='3x3'" html)
       (should-contain "value='4x4'" html)
