@@ -2,7 +2,9 @@
   (:require [clojure.string :as str]
             [speclj.core :refer :all]
             [serve-ttt.handler :as sut]
-            [serve-ttt.mock-request :refer [mock-request]]))
+            [serve-ttt.mock-request :refer [mock-request]])
+  (:import [Connection Response Request]
+           (java.io ByteArrayInputStream)))
 
 (def board3 [[1 2 "X"]
              [4 "O" 6]
@@ -31,6 +33,13 @@
                          :players             [{:character "X" :play-type nil :difficulty nil}
                                                {:character "O" :play-type nil :difficulty nil}]
                          :save                :sql})
+
+(defn create-request [method path & {:keys [headers body]}]
+  (let [request-line (str method " " path " HTTP/1.1\r\n")
+        header-lines (apply str (map (fn [[k v]] (str k ": " v "\r\n")) headers))
+        request-string (str request-line header-lines "\r\n" (when body (String. body)))
+        input-stream (ByteArrayInputStream. (.getBytes request-string "ISO-8859-1"))]
+    (Request/parseRequest input-stream)))
 
 (describe "handler for web"
   (with-stubs)
@@ -173,6 +182,10 @@
         (should (some #(str/includes? % "status=config-x-type") cookies))))
 
     (it "handles the request from request object to response object"
-      (let [request (mock-request "POST" "/ttt" )]))
+      (let [request       (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
+            handler       (sut/->TttHandler)
+            response      (.handle handler request)
+            response-body (String. (.getBody response))]
+        (should-contain "Choose X Player Type" response-body)))
     )
   )

@@ -1,10 +1,11 @@
 (ns serve-ttt.main
   (:require [tic-tac-toe.core]
             ;[tic-tac-toe.persistence.postgresql]
-            [serve-ttt.core :refer [server-name]])
+            [serve-ttt.core :refer [server-name]]
+            [serve-ttt.handler])
   (:import [Router Router]
            [Main Server]
-           [serve_ttt.handler TttHandler])
+           (serve_ttt.handler TttHandler))
   (:gen-class))
 
 (def router (doto (Router. server-name)

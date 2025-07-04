@@ -1,7 +1,7 @@
 (ns serve-ttt.html
   (:require [clojure.string :as str]
             [serve-ttt.core :as core]
-            ;[tic-tac-toe.persistence.postgresql]
+            [tic-tac-toe.persistence.postgresql]
             [tic-tac-toe.core :as ttt-core]))
 
 
@@ -24,17 +24,19 @@
        "</body></html>"))
 
 (defn render-welcome-page [state]
-  ;(if-let [saved-game (ttt-core/load-game state)]
-  (str "<html><body>"
-       "<h1>Welcome to Tic-Tac-Toe!</h1>"
-       "<p>Let's set up your game.</p>"
-       "<form method='POST' action='/ttt'>"
-       "<button type='submit' name='new-game' value='start'>Start Game Setup</button>"
-       ;(when saved-game
-       ;  "<button type='submit' name='load-game' value='load'>Load Previous Game</button>")
-       "</form>"
-       "</body></html>"))
-;)
+  (println "render-welcome")
+  (let [saved-game (ttt-core/load-game state)]
+    (prn "saved-game:" saved-game)
+    (str "<html><body>"
+         "<h1>Welcome to Tic-Tac-Toe!</h1>"
+         "<p>Let's set up your game.</p>"
+         "<form method='POST' action='/ttt'>"
+         "<button type='submit' name='new-game' value='start'>Start Game Setup</button>"
+         (when saved-game
+           "<button type='submit' name='load-game' value='load'>Load Previous Game</button>")
+         "</form>"
+         "</body></html>"))
+  )
 
 (defn render-display-state [state]
   (str "<html><body><h1>Current state:</h1>"
@@ -43,6 +45,8 @@
        "</body></html>"))
 
 (defn create-html [state]
+  (println "create-html")
+  (prn "state:" state)
   (case (:status state)
     :welcome (render-welcome-page state)
     :config-x-type (form-page "Choose X Player Type" "x-type" core/player-types)

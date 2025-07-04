@@ -4,7 +4,7 @@
 
 (describe "html"
   (it "renders welcome page"
-    (let [html (sut/create-html {:status :welcome :save :sql})]
+    (let [html (sut/create-html {:status :welcome :save :edn})]
       (should-contain "Welcome to Tic-Tac-Toe!" html)))
 
   (it "renders config x-type page"

@@ -59,7 +59,7 @@
    "board"               (grid->string board)})
 
 (defn cookies->state [cookies]
-  (let [base-state (ttt-core/initial-state {:interface :web})]
+  (let [base-state (ttt-core/initial-state :web :edn)]
     (reduce (fn [state [coo-key cook-val]]
               (cond (or (nil? cook-val) (= "nil" cook-val)) state
                     (= coo-key "board") (assoc state :board (string->grid cook-val))
@@ -74,19 +74,16 @@
             cookies))
   )
 
-(defn get-game-from-request [request]
-  (let [cookies       (.getCookies request)
-        form-data     (get-form-data request)
-        cookies-state (cookies->state cookies)]
+(defn add-form-data-to-state [request state]
+  (let [form-data (get-form-data request)]
+    (if (not-empty form-data)
+      (assoc state :form-data form-data)
+      state)))
 
-    (let [base-state           (if (< (count cookies) 2)
-                                 (ttt-core/start-game {:interface :web})
-                                 cookies-state)
-          has-form-data?       (not-empty form-data)
-          state-with-form-data (if has-form-data?
-                                 (assoc base-state :form-data form-data)
-                                 base-state)]
-      state-with-form-data)))
+(defn get-game-from-request [request]
+  (let [base-state           (cookies->state (.getCookies request))
+        state-with-form-data (add-form-data-to-state request base-state)]
+    state-with-form-data))
 
 (defn generate-response [html state]
   (let [cookies  (state->cookies state)
@@ -103,6 +100,6 @@
 
 (deftype TttHandler []
   RouteHandler
-    (handle [this request]
-      (let [state (get-game-from-request request)]
-        (handle-request state))))
+  (handle [this request]
+    (let [state (get-game-from-request request)]
+      (handle-request state))))
