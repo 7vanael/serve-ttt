@@ -13,6 +13,8 @@
 (def root-path (.toPath (File. "testroot")))
 
 (def router (doto (Router. server-name)
+              (.addRoute "GET" "/" (FileHandler. root-path core/server-name))
+              (.addRoute "GET" "/*" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/ttt" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/ttt/*" (FileHandler. root-path core/server-name))
               (.addRoute "POST" "/ttt" (TttHandler.))
