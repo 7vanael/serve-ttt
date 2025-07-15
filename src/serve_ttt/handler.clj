@@ -40,7 +40,7 @@
 
 (defn string->grid [board-as-string]
   (-> board-as-string
-      read-string
+      clojure.edn/read-string
       vec
       reconstruct-grid))
 
@@ -92,11 +92,29 @@
       (.addCookie response (str k "=" v "; Path=/ttt; Max-Age=3600")))
     response))
 
-(defn handle-request [state]
-  (prn "state:" state)
-  (let [updated-state (ttt-core/update-state state)
-        html          (create-html updated-state)]
-    (generate-response html updated-state)))
+
+(defn write-html-file [html status]
+  (let [filename  (str (name status) ".html")
+        file-path (str "testroot/" filename)]
+    (try
+      (spit file-path html)
+      filename
+      (catch Exception e
+        (println "Error writing file:" (.getMessage e))
+        nil))))
+
+(defn handle-request [state & [write-fn]]
+  (let [write-fn      (or write-fn write-html-file)
+        updated-state (ttt-core/update-state state)
+        html          (create-html updated-state)
+        filename      (write-fn html (:status updated-state))
+        location      (str "/ttt/" filename)
+        cookies       (state->cookies updated-state)
+        response      (Response. (str server-name) (int 302) (str "text/plain") (str "Redirecting"))]
+    (.addHeader response "Location" location)
+    (doseq [[k v] cookies]
+      (.addCookie response (str k "=" v "; Path=/ttt; Max-Age=3600")))
+    response))
 
 (deftype TttHandler []
   RouteHandler

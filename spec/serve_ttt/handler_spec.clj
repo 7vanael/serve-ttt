@@ -2,9 +2,10 @@
   (:require [clojure.string :as str]
             [speclj.core :refer :all]
             [serve-ttt.handler :as sut]
-            [serve-ttt.mock-request :refer [mock-request]])
+            [serve-ttt.mock-request :refer [mock-request]]
+            [serve-ttt.test-helper :as helper])
   (:import [Connection Response Request]
-           (java.io ByteArrayInputStream)))
+           (java.io ByteArrayInputStream File)))
 
 (def board3 [[1 2 "X"]
              [4 "O" 6]
@@ -34,15 +35,16 @@
                                                {:character "O" :play-type nil :difficulty nil}]
                          :save                :sql})
 
-(defn create-request [method path & {:keys [headers body]}]
-  (let [request-line (str method " " path " HTTP/1.1\r\n")
-        header-lines (apply str (map (fn [[k v]] (str k ": " v "\r\n")) headers))
-        request-string (str request-line header-lines "\r\n" (when body (String. body)))
-        input-stream (ByteArrayInputStream. (.getBytes request-string "ISO-8859-1"))]
-    (Request/parseRequest input-stream)))
+#_(defn create-request [method path & {:keys [headers body]}]
+    (let [request-line   (str method " " path " HTTP/1.1\r\n")
+          header-lines   (apply str (map (fn [[k v]] (str k ": " v "\r\n")) headers))
+          request-string (str request-line header-lines "\r\n" (when body (String. body)))
+          input-stream   (ByteArrayInputStream. (.getBytes request-string "ISO-8859-1"))]
+      (Request/parseRequest input-stream)))
 
 (describe "handler for web"
   (with-stubs)
+  (before (reset! helper/mock-files {}))
 
   (context "form data"
     (it "returns a map of form input"
@@ -113,8 +115,8 @@
         (should= :easy (get-in state [:players 0 :difficulty]))
         (should= :computer (get-in state [:players 1 :play-type]))
         (should= :hard (get-in state [:players 1 :difficulty]))
-        (should= board3 (:board state))
-        ))
+        (should= board3 (:board state))))
+
     (it "allows for nil values and still provides a complete state"
       (let [cookies {"status"              "in-progress"
                      "interface"           "web"
@@ -147,13 +149,50 @@
         (should-be-nil (:form-data state))))
     )
 
-  (context "generates response object"
-    (it "creates a response object if given html and a state"
-      (let [state    mock-initial-state
-            html     "<html><h1>Test html body</h1></html>"
-            response (sut/generate-response html state)]
-        (should-not-be-nil response)
-        (should-contain "Test html body" (String. (.getBody response)))))
+  (context "writes html files"
+    (it "writes html to file named for status"
+      (let [html "<html><h1>TestPage</h1></html>"
+            filename (helper/mock-write-html-file html :welcome)]
+        (should= "welcome.html" filename)
+        (should (helper/mock-file-exists? "testroot/welcome.html"))
+        (should (helper/mock-file-contains? "testroot/welcome.html" "TestPage")))))
+
+  (it "overwrites existing mock files"
+    (let [html1 "<html><h1>First</h1></html>"
+          html2 "<html><h1>Second</h1></html>"
+          _ (helper/mock-write-html-file html1 :config-x-type)
+          filename (helper/mock-write-html-file html2 :config-x-type)]
+      (should= "config-x-type.html" filename)
+      (should (helper/mock-file-contains? "testroot/config-x-type.html" "Second"))
+      (should-not (helper/mock-file-contains? "testroot/config-x-type.html" "First"))))
+
+  (it "can track multiple files"
+    (helper/mock-write-html-file "<html>Welcome</html>" :welcome)
+    (helper/mock-write-html-file "<html>Config</html>" :config-x-type)
+    (should= 2 (count (helper/list-mock-files)))
+    (should (helper/mock-file-exists? "testroot/welcome.html"))
+    (should (helper/mock-file-exists? "testroot/config-x-type.html")))
+
+  (it "converts status keywords to filenames correctly"
+    (let [test-cases [[:welcome "welcome.html"]
+                      [:config-x-type "config-x-type.html"]
+                      [:config-o-difficulty "config-o-difficulty.html"]
+                      [:in-progress "in-progress.html"]]]
+      (doseq [[status expected-filename] test-cases]
+        (let [filename (helper/mock-write-html-file "<html>test</html>" status)]
+          (should= expected-filename filename)
+          (should (helper/mock-file-exists? (str "testroot/" expected-filename)))))))
+
+  (context "generates redirect response object"
+    (it "creates a 302 redirect response using mock file system"
+      (let [state mock-initial-state
+            response (sut/handle-request state helper/mock-write-html-file)
+            headers (.getHeaders response)]
+        (should= 302 (.getStatusCode response))
+        (should= "Redirecting" (String. (.getBody response)))
+        (should-contain "Location" (keys headers))
+        (should= 1 (count (helper/list-mock-files)))))
+
     (it "creates a response object including cookies that capture the state"
       (let [state    {:interface           :web
                       :board               board3
@@ -172,20 +211,46 @@
         (should= 9 (count cookies))))
     )
 
-  (context "handles the request"
-    (it "calls update-state on the state and creates a response"
-      (let [state    (assoc mock-initial-state :form-data "new-game=start")
-            response (sut/handle-request state)
-            cookies  (.getCookies response)]
-        (should-not-be-nil response)
-        (should-contain "Choose X Player" (String. (.getBody response)))
-        (should (some #(str/includes? % "status=config-x-type") cookies))))
+  (context "handles the Post with a redirect to get"
+    (it "processes POST request and returns redirect with correct location"
+      (let [state (assoc mock-initial-state :form-data {"new-game" "start"})
+            response (sut/handle-request state helper/mock-write-html-file)
+            headers (.getHeaders response)
+            location (get headers "Location")]
+        (should= 302 (.getStatusCode response))
+        (should (str/includes? location "/ttt/"))
+        (should (str/ends-with? location ".html"))
+        (should-contain "Redirecting" (String. (.getBody response)))))
 
-    (it "handles the request from request object to response object"
-      (let [request       (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
-            handler       (sut/->TttHandler)
-            response      (.handle handler request)
-            response-body (String. (.getBody response))]
-        (should-contain "Choose X Player Type" response-body)))
-    )
+    (it "creates mock HTML file that matches redirect location"
+      (let [state (assoc mock-initial-state :form-data {"new-game" "start"})
+            response (sut/handle-request state helper/mock-write-html-file)
+            headers (.getHeaders response)
+            location (get headers "Location")
+            filename (str/replace location "/ttt/" "testroot/")]
+        (should (helper/mock-file-exists? filename))
+        (should (> (count (helper/mock-file-content filename)) 0))))
+
+    (it "different states create different mock filenames"
+      (let [welcome-state (assoc mock-initial-state :status :welcome)
+            config-state (assoc mock-initial-state :status :config-x-type)
+            welcome-response (sut/handle-request welcome-state helper/mock-write-html-file)
+            config-response (sut/handle-request config-state helper/mock-write-html-file)
+            welcome-location (get (.getHeaders welcome-response) "Location")
+            config-location (get (.getHeaders config-response) "Location")]
+        (should-not= welcome-location config-location)
+        (should (str/includes? welcome-location "welcome.html"))
+        (should (str/includes? config-location "config-x-type.html"))
+        (should= 2 (count (helper/list-mock-files)))))
+
+    (it "full integration with mocked file system"
+      (with-redefs[]
+        (let [request (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
+            state (sut/get-game-from-request request)
+            response (sut/handle-request state helper/mock-write-html-file)
+            headers (.getHeaders response)]
+        (should= 302 (.getStatusCode response))
+        (should-contain "Location" (keys headers))
+        (should-contain "Redirecting" (String. (.getBody response)))
+        (should (> (count (helper/list-mock-files)) 0))))))
   )
