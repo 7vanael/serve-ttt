@@ -95,7 +95,7 @@
 
 (defn write-html-file [html status]
   (let [filename  (str (name status) ".html")
-        file-path (str "testroot/" filename)]
+        file-path (str "testroot/ttt/" filename)]
     (try
       (spit file-path html)
       filename

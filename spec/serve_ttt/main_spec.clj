@@ -6,4 +6,4 @@
   (with-stubs)
   (it "has a router with routes"
     (let [routes (.getRoutes router)]
-      (should= 4 (count routes)))))
+      (should= 6 (count routes)))))
