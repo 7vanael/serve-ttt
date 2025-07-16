@@ -55,7 +55,7 @@
                     :players   [{:play-type :human :difficulty nil} {:play-type nil :difficulty nil}]}
             result (core/update-state state)]
         (should= :human (get-in result [:players 1 :play-type]))
-        (should= :config-board (:status result))
+        (should= :select-board (:status result))
         (should-not-contain :form-data result)))
 
     (it "sets o player to computer and moves to config-o-difficulty"

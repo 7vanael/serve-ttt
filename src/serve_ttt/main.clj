@@ -23,5 +23,5 @@
 (def server (Server. 80 "testroot" router))
 
 (defn -main [& args]
-  (println "Starting Tic-Tac-Toe in HTTP web server. Visit localhost/ttt to play")
+  (println "Starting Tic-Tac-Toe in HTTP web server. Visit localhost to play")
   (.startServer server))

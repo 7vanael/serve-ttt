@@ -25,7 +25,7 @@
   (if-let [o-type (get-in state [:form-data "o-type"])]
     (-> state
         (assoc-in [:players 1 :play-type] (keyword o-type))
-        (assoc :status (if (= "human" o-type) :config-board :config-o-difficulty))
+        (assoc :status (if (= "human" o-type) :select-board :config-o-difficulty))
         (dissoc :form-data))
     state))
 
