@@ -59,7 +59,7 @@
    "board"               (grid->string board)})
 
 (defn cookies->state [cookies]
-  (let [base-state (ttt-core/initial-state :web :edn)]
+  (let [base-state (ttt-core/initial-state {:interface :web :save :sql})]
     (reduce (fn [state [coo-key cook-val]]
               (cond (or (nil? cook-val) (= "nil" cook-val)) state
                     (= coo-key "board") (assoc state :board (string->grid cook-val))
@@ -75,10 +75,10 @@
   )
 
 (defn add-form-data-to-state [request state]
-  (let [form-data (get-form-data request)]
-    (if (not-empty form-data)
-      (assoc state :form-data form-data)
-      state)))
+  (let [form-data (get-form-data request)
+        response (-> form-data vals first keyword)]
+      (cond-> state
+              (seq form-data) (assoc :response response))))
 
 (defn get-game-from-request [request]
   (let [base-state           (cookies->state (.getCookies request))
@@ -104,20 +104,28 @@
         nil))))
 
 (defn handle-request [state & [write-fn]]
-  (let [write-fn      (or write-fn write-html-file)
-        updated-state (ttt-core/update-state state)
-        html          (create-html updated-state)
-        filename      (write-fn html (:status updated-state))
-        location      (str "/ttt/" filename)
+  (let [;write-fn      (or write-fn write-html-file)
+        updated-state (ttt-core/update-state state (:response state))
+        ;html          (create-html updated-state)
+        ;filename      (write-fn html (:status updated-state))
+        ;location      (str "/ttt/" filename)
+        ;location      "/ttt/view" ;; this handler would load state from cookie, generate HTML, and send HTML in response
         cookies       (state->cookies updated-state)
         response      (Response. (str server-name) (int 302) (str "text/plain") (str "Redirecting"))]
-    (.addHeader response "Location" location)
+    (.addHeader response "Location" "/ttt/view")
     (doseq [[k v] cookies]
       (.addCookie response (str k "=" v "; Path=/ttt; Max-Age=3600")))
     response))
 
-(deftype TttHandler []
+(deftype TttPostHandler []
   RouteHandler
   (handle [this request]
     (let [state (get-game-from-request request)]
       (handle-request state))))
+
+(deftype TttViewHandler []
+  RouteHandler
+  (handle [this request]
+    (let [state (cookies->state (.getCookies request))
+          html  (create-html state)]
+      (generate-response html state))))

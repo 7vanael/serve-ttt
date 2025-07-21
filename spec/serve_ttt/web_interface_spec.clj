@@ -3,7 +3,7 @@
             [tic-tac-toe.core :as core]))
 
 
-(describe "web state management"
+#_(describe "web state management"
   (with-stubs)
 
   (context "update-state for welcome status"

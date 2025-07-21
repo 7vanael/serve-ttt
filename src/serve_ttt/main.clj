@@ -6,7 +6,7 @@
   (:import [Router Router FileHandler]
            [Main Server]
            (java.io File)
-           (serve_ttt.handler TttHandler))
+           (serve_ttt.handler TttPostHandler TttViewHandler))
 
   (:gen-class))
 
@@ -17,8 +17,9 @@
               (.addRoute "GET" "/*" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/ttt" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/ttt/*" (FileHandler. root-path core/server-name))
-              (.addRoute "POST" "/ttt" (TttHandler.))
-              (.addRoute "POST" "/ttt/*" (TttHandler.))))
+              (.addRoute "GET" "/ttt/view" (TttViewHandler.))
+              (.addRoute "POST" "/ttt" (TttPostHandler.))
+              (.addRoute "POST" "/ttt/*" (TttPostHandler.))))
 
 (def server (Server. 80 "testroot" router))
 

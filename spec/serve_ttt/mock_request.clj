@@ -3,13 +3,14 @@
            (java.util HashMap Map)))
 
 (defn mock-request
-  [method path & {:keys [error-code headers cookies body query-string valid?]
+  [method path & {:keys [error-code headers cookies body query-string valid? save]
                   :or {error-code 0
                        headers {}
                        cookies {}
                        body (byte-array 0)
                        query-string nil
-                       valid? true}}]
+                       valid? true
+                       save :mock}}]
   (let [headers-map (HashMap. ^Map headers)
         cookies-map (HashMap. ^Map cookies)]
     (reify RequestI

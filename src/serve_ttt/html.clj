@@ -53,4 +53,6 @@
     :select-board (form-page "Choose Board Size" "board-size" core/board-sizes)
     :display (render-display-state state)
 
+    :in-progress (render-display-state state)
+
     (str "<h1>Unknown state: " (:status state) "</h1>")))

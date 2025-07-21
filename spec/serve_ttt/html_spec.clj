@@ -37,7 +37,7 @@
       (should-contain "value='hard'" html)
       (should-contain "Choose O Player Difficulty" html)))
 
-  (it "renders config board-size page"
+  (it "renders select board-size page"
     (let [html (sut/create-html {:status :select-board})]
       (should-contain "name='board-size'" html)
       (should-contain "value='3x3'" html)

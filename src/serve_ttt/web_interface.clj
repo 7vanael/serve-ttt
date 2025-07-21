@@ -4,7 +4,7 @@
             ))
 
 (defmethod core/start-game :web [state]
-  (core/initial-state (:interface state) (:save state)))
+  (core/initial-state state))
 
 (defmethod core/update-state [:web :welcome] [state]
   ;(let [game (core/load-game state)]
