@@ -59,7 +59,7 @@
    "board"               (grid->string board)})
 
 (defn cookies->state [cookies]
-  (let [base-state (ttt-core/initial-state {:interface :web :save :sql})]
+  (let [base-state (ttt-core/initial-state {:interface :web})]
     (reduce (fn [state [coo-key cook-val]]
               (cond (or (nil? cook-val) (= "nil" cook-val)) state
                     (= coo-key "board") (assoc state :board (string->grid cook-val))
@@ -93,23 +93,8 @@
     response))
 
 
-(defn write-html-file [html status]
-  (let [filename  (str (name status) ".html")
-        file-path (str "testroot/ttt/" filename)]
-    (try
-      (spit file-path html)
-      filename
-      (catch Exception e
-        (println "Error writing file:" (.getMessage e))
-        nil))))
-
-(defn handle-request [state & [write-fn]]
-  (let [;write-fn      (or write-fn write-html-file)
-        updated-state (ttt-core/update-state state (:response state))
-        ;html          (create-html updated-state)
-        ;filename      (write-fn html (:status updated-state))
-        ;location      (str "/ttt/" filename)
-        ;location      "/ttt/view" ;; this handler would load state from cookie, generate HTML, and send HTML in response
+(defn handle-request [state]
+  (let [updated-state (ttt-core/update-state state (:response state))
         cookies       (state->cookies updated-state)
         response      (Response. (str server-name) (int 302) (str "text/plain") (str "Redirecting"))]
     (.addHeader response "Location" "/ttt/view")
