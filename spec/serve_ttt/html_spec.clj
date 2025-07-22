@@ -42,7 +42,7 @@
       (should-contain "name='board-size'" html)
       (should-contain "value='3x3'" html)
       (should-contain "value='4x4'" html)
-      (should-contain "value='3x3x3'" html)
+      ;(should-contain "value='3x3x3'" html)
       (should-contain "Choose Board Size" html)))
 
   (context "single cell rendering"

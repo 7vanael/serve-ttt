@@ -114,7 +114,47 @@
         (should-not-contain :form-data result)
         (should= [[[1 2 3] [4 5 6] [7 8 9]] [[10 11 12] [13 14 15] [16 17 18]] [[19 20 21] [22 23 24] [25 26 27]]]
                  (:board result))))
+    )
 
+  (context "tie"
+    (it "returns a fresh-state in status config-x-type for play-again"
+      (let [state (helper/state-create {:status :tie :x-type :human :o-type :human :board [["X" "X" "O"]
+                                                                                           ["O" "O" "X"]
+                                                                                           ["X" "O" "X"]]
+                                        :response :play-again})
+            result (sut/process-input state)]
+        (should= result (core/fresh-start state))))
+
+    (it "returns a state in status game-over for exit"
+      (let [state (helper/state-create {:status :tie :x-type :human :o-type :human :board [["X" "X" "O"]
+                                                                                           ["O" "O" "X"]
+                                                                                           ["X" "O" "X"]]
+                                        :response :exit})
+            result (sut/process-input state)]
+        (should= result (dissoc (assoc state :status :game-over) :response))))
 
     )
+
+  (context "winner"
+    (it "returns a fresh-state in status config-x-type for play-again"
+      (let [state (helper/state-create {:status :winner :x-type :human :o-type :human :board [["X" "X" "O"]
+                                                                                           ["O" "O" "X"]
+                                                                                           ["X" "O" "X"]]
+                                        :response :play-again})
+            result (sut/process-input state)]
+        (should= result (core/fresh-start state))))
+
+    (it "returns a state in status game-over for exit"
+      (let [state (helper/state-create {:status :winner :x-type :human :o-type :human :board [["X" "X" "O"]
+                                                                                           ["O" "O" "X"]
+                                                                                           ["X" "O" "X"]]
+                                        :response :exit})
+            result (sut/process-input state)]
+        (should= result (dissoc (assoc state :status :game-over) :response))))
+
+    )
+
+  (context "in-progress"
+    (it ""))
+
   )
