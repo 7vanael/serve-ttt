@@ -163,9 +163,9 @@
     :config-o-type (form-page "Choose O Player Type" "o-type" core/player-types)
     :config-o-difficulty (form-page "Choose O Player Difficulty" "o-difficulty" core/difficulty-levels)
     :select-board (form-page "Choose Board Size" "board-size" core/board-sizes)
-    :display (render-display-state state)
     :in-progress (render-game-board state)
     :tie (render-game-over state)
     :winner (render-game-over state)
+    :display (render-display-state state)
 
     (str "<h1>Unknown state: " (:status state) "</h1>")))

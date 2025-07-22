@@ -34,3 +34,19 @@
   (let [converted-size  (get board-size-map (:response state))
         corrected-state (assoc state :response converted-size)]
     (core/select-board corrected-state)))
+
+(defmethod process-input :in-progress [state]
+  (core/play-turn! state))
+
+(defmethod process-input :tie [state]
+  (core/maybe-play-again state))
+
+(defmethod process-input :winner [state]
+  (core/maybe-play-again state))
+
+(defmethod core/take-human-turn :web [state]
+  (let [correct-response (-> (:response state)
+                             name
+                             Integer/parseInt)
+        correct-state (assoc state :response correct-response)]
+    (core/do-take-human-turn correct-state)))
