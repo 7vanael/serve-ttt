@@ -17,10 +17,7 @@
               (.addRoute "GET" "/ttt/view" (TttViewHandler.))
               (.addRoute "GET" "/" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/*" (FileHandler. root-path core/server-name))
-              (.addRoute "GET" "/ttt" (FileHandler. root-path core/server-name))
-              (.addRoute "GET" "/ttt/*" (FileHandler. root-path core/server-name))
-              (.addRoute "POST" "/ttt" (TttPostHandler.))
-              (.addRoute "POST" "/ttt/*" (TttPostHandler.))))
+              (.addRoute "POST" "/*" (TttPostHandler.))))
 
 (def server (Server. 80 "testroot" router))
 
