@@ -26,9 +26,11 @@
   (core/config-o-difficulty state))
 
 (def board-size-map
-  {"3x3"   3
-   "4x4"   4
-   "3x3x3" [3 3 3]})
+  {:3x3   3
+   :4x4   4
+   :3x3x3 [3 3 3]})
 
 (defmethod process-input :select-board [state]
-  (core/select-board state))
+  (let [converted-size  (get board-size-map (:response state))
+        corrected-state (assoc state :response converted-size)]
+    (core/select-board corrected-state)))

@@ -94,14 +94,14 @@
 
   (context "board configuration"
     (it "sets board configuration and moves to in-progress for board size 3"
-      (let [state  (helper/state-create {:status :select-board :response 3 :o-type :computer :x-type :human :o-difficulty :medium})
+      (let [state  (helper/state-create {:status :select-board :response :3x3 :o-type :computer :x-type :human :o-difficulty :medium})
             result (sut/process-input state)]
         (should= :in-progress (:status result))
         (should-not-contain :form-data result)
         (should= [[1 2 3] [4 5 6] [7 8 9]] (:board result))))
 
-    (it "sets board configuration and moves to in-progress for board size 3"
-      (let [state  (helper/state-create {:status :select-board :response 4 :o-type :computer :x-type :human :o-difficulty :medium})
+    (it "sets board configuration and moves to in-progress for board size 4"
+      (let [state  (helper/state-create {:status :select-board :response :4x4 :o-type :computer :x-type :human :o-difficulty :medium})
             result (sut/process-input state)]
         (should= :in-progress (:status result))
         (should-not-contain :form-data result)
