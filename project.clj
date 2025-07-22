@@ -5,7 +5,7 @@
             :url "http://www.eclipse.org/legal/epl-v10.html"}
   ;call this main instead of core?
   :main serve-ttt.main
-  :dependencies [[org.clojure/clojure "1.8.0"]
+  :dependencies [[org.clojure/clojure "1.11.1"]
                  [kristi/server "1.0-SNAPSHOT"]
                  [tic-tac-toe "0.1.0-SNAPSHOT"]
                  [com.github.seancorfield/next.jdbc "1.3.1002"]

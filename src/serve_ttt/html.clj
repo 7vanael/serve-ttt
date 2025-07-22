@@ -37,6 +37,17 @@
          "</body></html>"))
  ; )
 
+(defn render-save-found [state]
+  (println "render-save-found")
+  (str "<html><body>"
+       "<h1>Welcome to Tic-Tac-Toe!</h1>"
+       "<p>Let's set up your game.</p>"
+       "<form method='POST' action='/ttt'>"
+       "<button type='submit' name='new-game' value='start'>Start Game Setup</button>"
+       "<button type='submit' name='load-game' value='load'>Load Previous Game</button>"
+       "</form>"
+       "</body></html>"))
+
 (defn render-display-state [state]
   (str "<html><body><h1>Current state:</h1>"
        (str/join (for [[key value] state]
@@ -46,6 +57,7 @@
 (defn create-html [state]
   (case (:status state)
     :welcome (render-welcome-page state)
+    :found-save (render-save-found state)
     :config-x-type (form-page "Choose X Player Type" "x-type" core/player-types)
     :config-x-difficulty (form-page "Choose X Player Difficulty" "x-difficulty" core/difficulty-levels)
     :config-o-type (form-page "Choose O Player Type" "o-type" core/player-types)

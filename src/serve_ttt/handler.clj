@@ -3,7 +3,7 @@
             [tic-tac-toe.core :as ttt-core]
             [serve-ttt.html :refer [create-html]]
             [serve-ttt.core :refer [server-name]]
-            [serve-ttt.web-interface])
+            [serve-ttt.web-interface :refer [process-input]])
   (:import [Main RouteHandler]
            [Connection Response Request]))
 
@@ -94,7 +94,7 @@
 
 
 (defn handle-request [state]
-  (let [updated-state (ttt-core/update-state state (:response state))
+  (let [updated-state (process-input state)
         cookies       (state->cookies updated-state)
         response      (Response. (str server-name) (int 302) (str "text/plain") (str "Redirecting"))]
     (.addHeader response "Location" "/ttt/view")

@@ -1,6 +1,7 @@
 (ns serve-ttt.main
   (:require [serve-ttt.core :as core]
             [tic-tac-toe.core]
+            [tic-tac-toe.persistence.postgresql]
             [serve-ttt.core :refer [server-name]]
             [serve-ttt.handler])
   (:import [Router Router FileHandler]
@@ -13,11 +14,11 @@
 (def root-path (.toPath (File. "testroot")))
 
 (def router (doto (Router. server-name)
+              (.addRoute "GET" "/ttt/view" (TttViewHandler.))
               (.addRoute "GET" "/" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/*" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/ttt" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/ttt/*" (FileHandler. root-path core/server-name))
-              (.addRoute "GET" "/ttt/view" (TttViewHandler.))
               (.addRoute "POST" "/ttt" (TttPostHandler.))
               (.addRoute "POST" "/ttt/*" (TttPostHandler.))))
 
