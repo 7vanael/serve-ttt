@@ -107,6 +107,14 @@
         (should-not-contain :form-data result)
         (should= [[1 2 3 4] [5 6 7 8] [9 10 11 12] [13 14 15 16]] (:board result))))
 
+    (it "sets board configuration and moves to in-progress for board size 3x3x3"
+      (let [state  (helper/state-create {:status :select-board :response :3x3x3 :o-type :computer :x-type :human :o-difficulty :medium})
+            result (sut/process-input state)]
+        (should= :in-progress (:status result))
+        (should-not-contain :form-data result)
+        (should= [[[1 2 3] [4 5 6] [7 8 9]] [[10 11 12] [13 14 15] [16 17 18]] [[19 20 21] [22 23 24] [25 26 27]]]
+                 (:board result))))
+
 
     )
   )
