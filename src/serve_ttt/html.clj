@@ -1,7 +1,7 @@
 (ns serve-ttt.html
   (:require [clojure.string :as str]
-            [serve-ttt.core :as core]))
-
+            [serve-ttt.core :as core]
+            [tic-tac-toe.core :as ttt]))
 
 (defn game-styles []
   (str "<style>"
@@ -39,9 +39,7 @@
        "</form>"
        "</body></html>"))
 
-(defn render-welcome-page [state]
-  ;(let [saved-game (ttt-core/load-game state)]
-  ;(prn "saved-game:" saved-game)
+(defn render-welcome-page []
   (str "<html><head>"
        (game-styles)
        "</head><body>"
@@ -49,19 +47,17 @@
        "<p>Let's set up your game.</p>"
        "<form method='POST' action='/ttt'>"
        "<button type='submit' name='new-game' value='start' class='action-button'>Start Game Setup</button>"
-       ; "<button type='submit' name='load-game' value='load' class='action-button'>Load Previous Game</button>")
        "</form>"
        "</body></html>"))
-; )
 
-(defn render-save-found [state]
+(defn render-save-found []
   (str "<html><head>"
        (game-styles)
        "</head><body>"
        "<h1>Welcome to Tic-Tac-Toe!</h1>"
        "<p>Let's set up your game.</p>"
        "<form method='POST' action='/ttt'>"
-       "<button type='submit' name='new-game' value='start' class='action-button'>Start Game Setup</button>"
+       "<button type='submit' name='new-game' value='start' class='action-button'>Setup New Game</button>"
        "<button type='submit' name='load-game' value='load' class='action-button'>Load Previous Game</button>"
        "</form>"
        "</body></html>"))
@@ -92,9 +88,9 @@
        (apply str (map render-cell row))
        "</tr>"))
 
-(defn render-board-table [{:keys [board status]}]
+(defn render-board-table [{:keys [board status] :as state}]
   (str "<table>"
-       (if (= :in-progress status)
+       (if (and (= :in-progress status) (ttt/currently-human? state))
          (apply str (map #(render-board-row %) board))
          (apply str (map #(render-static-row %) board)))
        "</table>"))
@@ -127,6 +123,11 @@
        "<h1>Tic-Tac-Toe</h1>"
        (render-game-announcement state)
        (render-board-table state)
+       (when (not (ttt/currently-human? state))
+         (str "<div class='game-actions'>"
+              "<form method='POST' action='/ttt' style='display: inline; margin-right: 10px;'>"
+              "<button type='submit' name='action' value='0' class='action-button'>Show Computer Move</button>"
+              "</form>"))
        "</body>"
        "</html>"))
 
@@ -162,8 +163,8 @@
 
 (defn create-html [state]
   (case (:status state)
-    :welcome (render-welcome-page state)
-    :found-save (render-save-found state)
+    :welcome (render-welcome-page)
+    :found-save (render-save-found)
     :config-x-type (form-page "Choose X Player Type" "x-type" core/player-types)
     :config-x-difficulty (form-page "Choose X Player Difficulty" "x-difficulty" core/difficulty-levels)
     :config-o-type (form-page "Choose O Player Type" "o-type" core/player-types)

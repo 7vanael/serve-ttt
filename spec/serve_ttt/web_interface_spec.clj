@@ -7,6 +7,7 @@
 
 (describe "web state management"
   (with-stubs)
+  (before (reset! helper/mock-files {}))
 
   (context "update-state for welcome status"                ;This may need to change, why not try to load a save here?
     (it "moves to config-x-type when form-data exists"
@@ -118,18 +119,18 @@
 
   (context "tie"
     (it "returns a fresh-state in status config-x-type for play-again"
-      (let [state (helper/state-create {:status :tie :x-type :human :o-type :human :board [["X" "X" "O"]
-                                                                                           ["O" "O" "X"]
-                                                                                           ["X" "O" "X"]]
-                                        :response :play-again})
+      (let [state  (helper/state-create {:status   :tie :x-type :human :o-type :human :board [["X" "X" "O"]
+                                                                                              ["O" "O" "X"]
+                                                                                              ["X" "O" "X"]]
+                                         :response :play-again})
             result (sut/process-input state)]
         (should= result (core/fresh-start state))))
 
     (it "returns a state in status game-over for exit"
-      (let [state (helper/state-create {:status :tie :x-type :human :o-type :human :board [["X" "X" "O"]
-                                                                                           ["O" "O" "X"]
-                                                                                           ["X" "O" "X"]]
-                                        :response :exit})
+      (let [state  (helper/state-create {:status   :tie :x-type :human :o-type :human :board [["X" "X" "O"]
+                                                                                              ["O" "O" "X"]
+                                                                                              ["X" "O" "X"]]
+                                         :response :exit})
             result (sut/process-input state)]
         (should= result (dissoc (assoc state :status :game-over) :response))))
 
@@ -137,24 +138,42 @@
 
   (context "winner"
     (it "returns a fresh-state in status config-x-type for play-again"
-      (let [state (helper/state-create {:status :winner :x-type :human :o-type :human :board [["X" "X" "O"]
-                                                                                           ["O" "O" "X"]
-                                                                                           ["X" "O" "X"]]
-                                        :response :play-again})
+      (let [state  (helper/state-create {:status   :winner :x-type :human :o-type :human :board [["X" "X" "X"]
+                                                                                                 ["O" "O" "X"]
+                                                                                                 ["X" "O" "O"]]
+                                         :response :play-again})
             result (sut/process-input state)]
         (should= result (core/fresh-start state))))
 
     (it "returns a state in status game-over for exit"
-      (let [state (helper/state-create {:status :winner :x-type :human :o-type :human :board [["X" "X" "O"]
-                                                                                           ["O" "O" "X"]
-                                                                                           ["X" "O" "X"]]
-                                        :response :exit})
+      (let [state  (helper/state-create {:status   :winner :x-type :human :o-type :human :board [["X" "X" "X"]
+                                                                                                 ["O" "O" "X"]
+                                                                                                 ["X" "O" "O"]]
+                                         :response :exit})
             result (sut/process-input state)]
         (should= result (dissoc (assoc state :status :game-over) :response))))
 
     )
 
   (context "in-progress"
-    (it ""))
+    (it "in a human v human game, it plays the current turn and returns the next state"
+      (let [state    (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
+                                           :active-player-index 0 :board [[1 2 3] [4 5 6] [7 8 9]]
+                                           :response            :5 :interface :web})
+            expected (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
+                                           :active-player-index 1 :board [[1 2 3] [4 "X" 6] [7 8 9]]
+                                           :interface           :web})
+            final    (sut/process-input state)]
+        (should= expected final)))
+
+    (it "stops looping when the game is over"
+      (let [state (helper/state-create {:status :in-progress :save :mock :x-type :human :o-type :human
+                                        :active-player-index 0 :board [["X" "X" 3] ["O" "O" "X"] ["X" "O" "O"]]
+                                        :response :3 :interface :web})
+            expected (helper/state-create {:status :winner :save :mock :x-type :human :o-type :human
+                                           :active-player-index 0 :board [["X" "X" "X"] ["O" "O" "X"] ["X" "O" "O"]]
+                                           :interface :web})]
+        (should= expected (sut/process-input state))))
+    )
 
   )
