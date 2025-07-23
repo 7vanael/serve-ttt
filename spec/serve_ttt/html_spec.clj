@@ -66,19 +66,19 @@
     (it "renders a static, occupied row"
       (let [expected (str "<tr><td class='occupied'>X</td><td class='occupied'>O</td>"
                           "<td class='occupied'>X</td></tr>")
-            row ["X" "O" "X"]]
+            row      ["X" "O" "X"]]
         (should= expected (sut/render-static-row row))))
 
     (it "renders a static row with open spaces"
       (let [expected (str "<tr><td class='occupied'>X</td><td class='occupied'>2</td>"
                           "<td class='occupied'>3</td></tr>")
-            row ["X" 2 3]]
+            row      ["X" 2 3]]
         (should= expected (sut/render-static-row row))))
 
     (it "renders an occupied row"
       (let [expected (str "<tr><td class='occupied'>X</td><td class='occupied'>O</td>"
                           "<td class='occupied'>X</td></tr>")
-            row ["X" "O" "X"]]
+            row      ["X" "O" "X"]]
         (should= expected (sut/render-board-row row))))
 
     (it "renders a row with playable spaces"
@@ -93,53 +93,74 @@
                           "<button type='submit' name='selection' value='3' class='move-button'>"
                           "3</button></form></td>"
                           "</tr>")
-            row ["X" 2 3]]
+            row      ["X" 2 3]]
         (should= expected (sut/render-board-row row))))
     )
 
-  (it "renders tie page"
-    (let [html (sut/create-html {:status :tie :board [["X" "X" "O"]
-                                                      ["O" "O" "X"]
-                                                      ["X" "O" "X"]]})]
-      (should-contain "<div class='game-over'>It's a tie!</div>" html)
-      (should-contain "value='play-again'" html)
-      (should-contain "value='exit'" html)
-      (should-not-contain "<td class='empty'>" html)
-      (should-not-contain "<button type='submit' name='selection'" html)))
+  (context "board rendering"
+    (it "renders tie page"
+      (let [html (sut/create-html {:status :tie :board [["X" "X" "O"]
+                                                        ["O" "O" "X"]
+                                                        ["X" "O" "X"]]})]
+        (should-contain "<div class='game-over'>It's a tie!</div>" html)
+        (should-contain "value='play-again'" html)
+        (should-contain "value='exit'" html)
+        (should-not-contain "<td class='empty'>" html)
+        (should-not-contain "<button type='submit' name='selection'" html)))
 
-  (it "renders winner page"
-    (let [html (sut/create-html {:status  :winner :active-player-index 1
-                                 :board   [["X" "X" "O"]
-                                           [4 "O" "X"]
-                                           ["O" 8 9]]
-                                 :players [{:character "X" :play-type :human}
-                                           {:character "O" :play-type :human}]})]
-      (should-contain "<div class='game-over'>Player O wins!</div>" html)
-      (should-contain "value='play-again'" html)
-      (should-contain "value='exit'" html)
-      (should-not-contain "<td class='empty'>" html)
-      (should-not-contain "<button type='submit' name='selection'" html)
-      (should-contain (str "<tr><td class='occupied'>O</td><td class='occupied'>8</td>"
-                           "<td class='occupied'>9</td></tr>") html)))
+    (it "renders winner page"
+      (let [html (sut/create-html {:status  :winner :active-player-index 1
+                                   :board   [["X" "X" "O"]
+                                             [4 "O" "X"]
+                                             ["O" 8 9]]
+                                   :players [{:character "X" :play-type :human}
+                                             {:character "O" :play-type :human}]})]
+        (should-contain "<div class='game-over'>Player O wins!</div>" html)
+        (should-contain "value='play-again'" html)
+        (should-contain "value='exit'" html)
+        (should-not-contain "<td class='empty'>" html)
+        (should-not-contain "<button type='submit' name='selection'" html)
+        (should-contain (str "<tr><td class='occupied'>O</td><td class='occupied'>8</td>"
+                             "<td class='occupied'>9</td></tr>") html)))
 
-  (it "renders an active board in-progress"
-    (let [html (sut/create-html {:status  :in-progress :active-player-index 1
-                                 :board   [["X" "X" 3]
-                                           [4 "O" "X"]
-                                           ["O" 8 9]]
-                                 :players [{:character "X" :play-type :human}
-                                           {:character "O" :play-type :human}]})]
-      (should-contain "<div class='current-player'>Player O's turn</div>" html)
-      (should-contain "<td class='empty'>" html)
-      (should-contain "<button type='submit' name='selection' value='3" html)
-      (should-contain (str "<tr><td class='occupied'>O</td>"
-                           "<td class='empty'><form method='POST' action='/ttt' style='display: inline;'>"
-                           "<button type='submit' name='selection' value='8' class='move-button'>"
-                           "8</button></form></td>"
-                           "<td class='empty'><form method='POST' action='/ttt' style='display: inline;'>"
-                           "<button type='submit' name='selection' value='9' class='move-button'>"
-                           "9</button></form></td>"
-                           "</tr>") html)))
+    (it "renders an active board in-progress during a human's turn"
+      (let [html (sut/create-html {:status  :in-progress :active-player-index 1
+                                   :board   [["X" "X" 3]
+                                             [4 "O" "X"]
+                                             ["O" 8 9]]
+                                   :players [{:character "X" :play-type :human}
+                                             {:character "O" :play-type :human}]})]
+        (should-contain "<div class='current-player'>Player O's turn</div>" html)
+        (should-contain "<td class='empty'>" html)
+        (should-contain "<button type='submit' name='selection' value='3" html)
+        (should-contain (str "<tr><td class='occupied'>O</td>"
+                             "<td class='empty'><form method='POST' action='/ttt' style='display: inline;'>"
+                             "<button type='submit' name='selection' value='8' class='move-button'>"
+                             "8</button></form></td>"
+                             "<td class='empty'><form method='POST' action='/ttt' style='display: inline;'>"
+                             "<button type='submit' name='selection' value='9' class='move-button'>"
+                             "9</button></form></td>"
+                             "</tr>") html)))
+
+    (it "renders an inactive board in-progress during a computer's turn"
+      (let [html (sut/create-html {:status  :in-progress :active-player-index 1
+                                   :board   [["X" "X" 3]
+                                             [4 "O" "X"]
+                                             ["O" 8 9]]
+                                   :players [{:character "X" :play-type :human}
+                                             {:character "O" :play-type :computer :difficulty :hard}]})]
+        (should-contain "<div class='current-player'>Player O's turn</div>" html)
+        (should-not-contain "<button type='submit' name='selection' value='3" html)
+        (should-contain (str "<td class='occupied'>8</td><td class='occupied'>9</td></tr>") html)
+        (should-not-contain (str "<td class='empty'><form method='POST' action='/ttt' style='display: inline;'>"
+                                 "<button type='submit' name='selection' value='8' class='move-button'>"
+                                 "8</button></form></td>"
+                                 "<td class='empty'><form method='POST' action='/ttt' style='display: inline;'>"
+                                 "<button type='submit' name='selection' value='9' class='move-button'>"
+                                 "9</button></form></td>"
+                                 "</tr>") html)))
+
+    )
 
   (it "renders a display of the state"
     (let [html (sut/create-html {:status :display})]

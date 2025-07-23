@@ -95,13 +95,12 @@
          (apply str (map #(render-static-row %) board)))
        "</table>"))
 
-(defn render-game-announcement [{:keys [status active-player-index players] :as state}]
+(defn render-game-announcement [{:keys [status active-player-index players]}]
   (let [current-char (get-in players [active-player-index :character])]
     (case status
       :in-progress (str "<div class='current-player'>Player " current-char "'s turn</div>")
       :tie (str "<div class='game-over'>It's a tie!</div>")
-      :winner (str "<div class='game-over'>Player " current-char " wins!</div>")
-      #_(str "<div class='current-player'>Game Status: " (name status) "</div>"))))
+      :winner (str "<div class='game-over'>Player " current-char " wins!</div>"))))
 
 (defn render-game-actions []
   (str "<div class='game-actions'>"

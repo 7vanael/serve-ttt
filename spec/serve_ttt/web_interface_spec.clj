@@ -7,9 +7,9 @@
 
 (describe "web state management"
   (with-stubs)
-  (before (reset! helper/mock-files {}))
+  (before (reset! helper/mock-db nil))
 
-  (context "update-state for welcome status"                ;This may need to change, why not try to load a save here?
+  (context "update-state for welcome status"
     (it "moves to config-x-type when form-data exists"
       (let [state  {:interface :web :status :welcome :form-data {"new-game" "start"} :save :mock}
             result (sut/process-input state)]
@@ -166,14 +166,26 @@
             final    (sut/process-input state)]
         (should= expected final)))
 
-    (it "stops looping when the game is over"
-      (let [state (helper/state-create {:status :in-progress :save :mock :x-type :human :o-type :human
-                                        :active-player-index 0 :board [["X" "X" 3] ["O" "O" "X"] ["X" "O" "O"]]
-                                        :response :3 :interface :web})
-            expected (helper/state-create {:status :winner :save :mock :x-type :human :o-type :human
+    (it "returns an updated state without changed player if game is over"
+      (let [state    (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
+                                           :active-player-index 0 :board [["X" "X" 3] ["O" "O" "X"] ["X" "O" "O"]]
+                                           :response            :3 :interface :web})
+            expected (helper/state-create {:status              :winner :save :mock :x-type :human :o-type :human
                                            :active-player-index 0 :board [["X" "X" "X"] ["O" "O" "X"] ["X" "O" "O"]]
-                                           :interface :web})]
+                                           :interface           :web})]
+        (should= expected (sut/process-input state))))
+
+    (it "allows the computer to be prompted to take a turn"
+      (let [state    (helper/state-create {:status              :in-progress :save :mock :x-type :computer :o-type :human
+                                           :active-player-index 0 :board [["X" "X" 3]
+                                                                          ["O" 5 "X"]
+                                                                          [7 "O" "O"]]
+                                           :response            :1 :interface :web :x-difficulty :hard})
+            expected (helper/state-create {:status              :winner :save :mock :x-type :computer :o-type :human
+                                           :active-player-index 0 :board [["X" "X" "X"]
+                                                                          ["O" 5 "X"]
+                                                                          [7 "O" "O"]]
+                                           :interface           :web :x-difficulty :hard})]
         (should= expected (sut/process-input state))))
     )
-
   )

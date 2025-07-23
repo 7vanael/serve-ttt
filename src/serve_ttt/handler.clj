@@ -50,7 +50,7 @@
 (defn state->cookies [{:keys [interface status active-player-index save players board] :as state}]
   {"status"              (name status)
    "active-player-index" (str active-player-index)
-   "save"                (name save)
+   "save"                (safe-name save)
    "interface"           (name interface)
    "x-type"              (safe-name (get-in players [0 :play-type]))
    "o-type"              (safe-name (get-in players [1 :play-type]))

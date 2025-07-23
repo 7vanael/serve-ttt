@@ -11,13 +11,7 @@
            (serve_ttt.handler TttPostHandler TttViewHandler)))
 
 
-(def mock-db (atom nil))
 
-(defmethod core/save-game :mock [state] (reset! mock-db state))
-(defmethod core/load-game :mock [state] (if (nil? @mock-db)
-                                          state
-                                          (assoc @mock-db :status :found-save)))
-(defmethod core/delete-save :mock [_] (reset! mock-db nil))
 
 (def board3 [[1 2 "X"]
              [4 "O" 6]
@@ -49,7 +43,7 @@
 
 (describe "handler for web"
   (with-stubs)
-  (before (reset! helper/mock-files {}))
+  (before (reset! helper/mock-db nil))
 
   (context "form data"
     (it "returns a map of form input"
@@ -172,12 +166,12 @@
 
     (it "handles form data correctly"
       (let [request  (mock-request "POST" "/ttt"
-                                     :cookies {"status" "config-x-type"}
-                                     :body (.getBytes "x-type=human"))
-              handler  (TttPostHandler.)
-              response (.handle handler request)]
-          (should= 302 (.getStatusCode response))
-          (should (some #(str/includes? % "x-type") (.getCookies response)))))
+                                   :cookies {"status" "config-x-type"}
+                                   :body (.getBytes "x-type=human"))
+            handler  (TttPostHandler.)
+            response (.handle handler request)]
+        (should= 302 (.getStatusCode response))
+        (should (some #(str/includes? % "x-type") (.getCookies response)))))
 
     (it "full process test POST; implementable handler that creates a redirect response from a Post request"
       (with-redefs [ttt-core/initial-state (fn [state] (merge {:interface           :web
@@ -189,7 +183,7 @@
                                                                :save                :mock}
                                                               state))]
         (let [request  (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
-              handler (sut/TttPostHandler. )
+              handler  (sut/TttPostHandler.)
               response (.handle handler request)
               headers  (.getHeaders response)]
           (should= 302 (.getStatusCode response))
@@ -216,53 +210,19 @@
         (should= 200 (.getStatusCode response))))
 
     (it "full process test GET; implementable handler that renders and serves html from the state provided in a GET request"
-      (let [request (mock-request "GET" "/ttt/view"
-                                  :cookies {"status" "welcome"
-                                            "interface" "web"
-                                            "save" "mock"})
-            handler (sut/TttViewHandler.)
+      (let [request  (mock-request "GET" "/ttt/view"
+                                   :cookies {"status"    "welcome"
+                                             "interface" "web"
+                                             "save"      "mock"})
+            handler  (sut/TttViewHandler.)
             response (.handle handler request)]
         (should= 200 (.getStatusCode response))
         (should= "text/html" (get (.getHeaders response) "Content-Type"))
         (should-contain "<html" (String. (.getBody response)))))
     )
 
-  (context "writes html files"
-    (it "writes html to file named for status"
-      (let [html     "<html><h1>TestPage</h1></html>"
-            filename (helper/mock-write-html-file html :welcome)]
-        (should= "welcome.html" filename)
-        (should (helper/mock-file-exists? "testroot/welcome.html"))
-        (should (helper/mock-file-contains? "testroot/welcome.html" "TestPage")))))
-
-  (it "overwrites existing mock files"
-    (let [html1    "<html><h1>First</h1></html>"
-          html2    "<html><h1>Second</h1></html>"
-          _        (helper/mock-write-html-file html1 :config-x-type)
-          filename (helper/mock-write-html-file html2 :config-x-type)]
-      (should= "config-x-type.html" filename)
-      (should (helper/mock-file-contains? "testroot/config-x-type.html" "Second"))
-      (should-not (helper/mock-file-contains? "testroot/config-x-type.html" "First"))))
-
-  (it "can track multiple files"
-    (helper/mock-write-html-file "<html>Welcome</html>" :welcome)
-    (helper/mock-write-html-file "<html>Config</html>" :config-x-type)
-    (should= 2 (count (helper/list-mock-files)))
-    (should (helper/mock-file-exists? "testroot/welcome.html"))
-    (should (helper/mock-file-exists? "testroot/config-x-type.html")))
-
-  (it "converts status keywords to filenames correctly"
-    (let [test-cases [[:welcome "welcome.html"]
-                      [:config-x-type "config-x-type.html"]
-                      [:config-o-difficulty "config-o-difficulty.html"]
-                      [:in-progress "in-progress.html"]]]
-      (doseq [[status expected-filename] test-cases]
-        (let [filename (helper/mock-write-html-file "<html>test</html>" status)]
-          (should= expected-filename filename)
-          (should (helper/mock-file-exists? (str "testroot/" expected-filename)))))))
-
   (context "generates redirect response object"
-    (it "creates a 302 redirect response using mock file system"
+    (it "creates a 302 redirect response"
       (let [state    mock-initial-state
             response (sut/handle-request state)
             headers  (.getHeaders response)]
@@ -287,8 +247,4 @@
         (should (some #(str/includes? % "status=in-progress") cookies))
         (should= 9 (count cookies))))
     )
-
-
-
-
   )
