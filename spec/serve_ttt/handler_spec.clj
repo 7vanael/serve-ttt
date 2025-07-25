@@ -81,7 +81,7 @@
         (should-contain "Redirecting" (String. (.getBody response)))
         (should (some #(str/includes? % "game-id=") (.getCookies response)))))
 
-    (it "creates new game when no game-id cookie present"
+    (it "creates new game when no game-id cookie present and no saves are found"
       (let [request        (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
             handler        (TttPostHandler.)
             response       (.handle handler request)
@@ -91,7 +91,28 @@
         (let [cookie-value (second (str/split game-id-cookie #"="))
               game-id      (Integer/parseInt (first (str/split cookie-value #";")))
               loaded-state (ttt-core/load-game {:save :mock :interface :web :game-id game-id})]
-          (should= :welcome (:status loaded-state)))))
+          (should= :config-x-type (:status loaded-state)))))
+
+    ;This is where the bug likely is- this isn't a post that's coming through
+    (it "offers to load a game when no game-id cookie present and a save is found"
+      (let [first-save     (core/save-game (helper/state-create {:status              :in-progress :board [["O" "X" 3] [4 "X" 6] [7 8 9]]
+                                                                 :x-type              :human :o-type :computer :o-difficulty :medium
+                                                                 :active-player-index 1}))
+            second-save    (core/save-game (helper/state-create {:status              :winner :board [["O" "X" 3] [4 "X" 6] [7 "X" "O"]]
+                                                                 :x-type              :computer :o-type :human :x-difficulty :hard
+                                                                 :active-player-index 0}))
+            request        (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
+            handler        (TttPostHandler.)
+            response       (.handle handler request)
+            cookies        (.getCookies response)
+            game-id-cookie (first (filter #(str/includes? % "game-id=") cookies))
+            cookie-value   (second (str/split game-id-cookie #"="))
+            game-id        (Integer/parseInt (first (str/split cookie-value #";")))
+            _              (prn "game-id:" game-id)
+            loaded-state   (ttt-core/load-game {:save :mock :interface :web :game-id game-id})]
+        (should-not-be-nil game-id-cookie)
+        (should= :found-save (:status loaded-state))
+        (should= game-id (:game-id first-save))))
 
     (it "Response includes cookie with game-id"
       (let [state    {:status :config-x-type :save :mock :interface :web :response :human :game-id 6}
@@ -112,10 +133,8 @@
             response      (.handle handler request)
             cookies       (.getCookies response)
             game-id-str   (extract-cookie-value cookies "game-id")
-            _             (prn "game-id-str:" game-id-str)
             updated-state (ttt-core/load-game {:save :mock :interface :web :game-id game-id})]
 
-        (prn "updated-state:" updated-state)
         (should= (str game-id) game-id-str)
         (should= :human (get-in updated-state [:players 0 :play-type]))
         (should= :config-o-type (:status updated-state))))
@@ -198,22 +217,22 @@
         (should-contain "Location" (keys headers))))
 
     (it "creates a response object including game-id cookie"
-      (let [state    {:interface           :web
-                      :board               board3
-                      :active-player-index 0
-                      :status              :in-progress
-                      :players             [{:character "X" :play-type :computer :difficulty :easy}
-                                            {:character "O" :play-type :computer :difficulty :hard}]
-                      :save                :mock}
+      (let [state       {:interface           :web
+                         :board               board3
+                         :active-player-index 0
+                         :status              :in-progress
+                         :players             [{:character "X" :play-type :computer :difficulty :easy}
+                                               {:character "O" :play-type :computer :difficulty :hard}]
+                         :save                :mock}
             saved-state (core/save-game state)
-            html     "<html>Test Body</html>"
-            response (sut/generate-get-response html saved-state)
-            id (:game-id saved-state)
-            headers  (.getHeaders response)
-            cookies  (.getCookies response)]
+            html        "<html>Test Body</html>"
+            response    (sut/generate-get-response html saved-state)
+            id          (:game-id saved-state)
+            headers     (.getHeaders response)
+            cookies     (.getCookies response)]
         (should= "text/html" (get headers "Content-Type"))
         (should= html (String. (.getBody response)))
-        (should (some #(str/includes? % (str "game-id="id)) cookies))
+        (should (some #(str/includes? % (str "game-id=" id)) cookies))
         (should= 1 (count cookies))))
     )
   )

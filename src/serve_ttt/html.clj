@@ -44,7 +44,7 @@
        (game-styles)
        "</head><body>"
        "<h1>Welcome to Tic-Tac-Toe!</h1>"
-       "<p>Let's set up your game.</p>"
+       "<p>Let's set up your game - from html render fn</p>"
        "<form method='POST' action='/ttt'>"
        "<button type='submit' name='new-game' value='start' class='action-button'>Start Game Setup</button>"
        "</form>"

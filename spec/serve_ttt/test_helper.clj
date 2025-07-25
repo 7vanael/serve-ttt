@@ -19,16 +19,12 @@
                                    (sort-by :game-id)
                                    last)]
       (assoc in-progress-game :status :found-save :interface (:interface state))
-      (core/save-game (core/initial-state {:interface (:interface state) :sae :mock})))))
-
-;(defmethod core/load-game :mock [state] (if (nil? @mock-db)
-;                                          state
-;                                          (assoc @mock-db :status :found-save)))
+      (core/save-game (core/initial-state {:interface (:interface state) :save :mock})))))
 
 
 (defmethod core/delete-save :mock [_] (reset! mock-db {}))
 
-(defn state-create [{:keys [interface board active-player-index status x-type o-type x-difficulty o-difficulty cells save response]
+(defn state-create [{:keys [interface board active-player-index status x-type o-type x-difficulty o-difficulty cells save response game-id]
                      :or   {board               nil
                             active-player-index 0
                             status              :welcome
@@ -45,4 +41,5 @@
           (some? cells) (assoc :cells cells)
           (some? interface) (assoc :interface interface)
           (some? response) (assoc :response response)
-          (some? save) (assoc :save save)))
+          (some? save) (assoc :save save)
+          (some? game-id) (assoc :game-id game-id)))

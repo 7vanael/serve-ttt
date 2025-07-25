@@ -157,35 +157,37 @@
 
   (context "in-progress"
     (it "in a human v human game, it plays the current turn and returns the next state"
-      (let [state    (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
-                                           :active-player-index 0 :board [[1 2 3] [4 5 6] [7 8 9]]
-                                           :response            :5 :interface :web})
+      (let [state    (core/save-game (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
+                                                           :active-player-index 0 :board [[1 2 3] [4 5 6] [7 8 9]]
+                                                           :response            :5 :interface :web}))
+            game-id  (:game-id state)
             expected (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
                                            :active-player-index 1 :board [[1 2 3] [4 "X" 6] [7 8 9]]
-                                           :interface           :web})
+                                           :interface           :web :game-id game-id})
             final    (sut/process-input state)]
         (should= expected final)))
 
     (it "returns an updated state without changed player if game is over"
-      (let [state    (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
-                                           :active-player-index 0 :board [["X" "X" 3] ["O" "O" "X"] ["X" "O" "O"]]
-                                           :response            :3 :interface :web})
+      (let [state    (core/save-game (helper/state-create {:status              :in-progress :save :mock :x-type :human :o-type :human
+                                                           :active-player-index 0 :board [["X" "X" 3] ["O" "O" "X"] ["X" "O" "O"]]
+                                                           :response            :3 :interface :web}))
+            game-id  (:game-id state)
             expected (helper/state-create {:status              :winner :save :mock :x-type :human :o-type :human
                                            :active-player-index 0 :board [["X" "X" "X"] ["O" "O" "X"] ["X" "O" "O"]]
-                                           :interface           :web})]
+                                           :interface           :web :game-id game-id})]
         (should= expected (sut/process-input state))))
 
     (it "allows the computer to be prompted to take a turn"
-      (let [state    (helper/state-create {:status              :in-progress :save :mock :x-type :computer :o-type :human
+      (let [state    (core/save-game (helper/state-create {:status              :in-progress :save :mock :x-type :computer :o-type :human
                                            :active-player-index 0 :board [["X" "X" 3]
                                                                           ["O" 5 "X"]
                                                                           [7 "O" "O"]]
-                                           :response            :1 :interface :web :x-difficulty :hard})
+                                           :response            :1 :interface :web :x-difficulty :hard}))
             expected (helper/state-create {:status              :winner :save :mock :x-type :computer :o-type :human
                                            :active-player-index 0 :board [["X" "X" "X"]
                                                                           ["O" 5 "X"]
                                                                           [7 "O" "O"]]
-                                           :interface           :web :x-difficulty :hard})]
+                                           :interface           :web :x-difficulty :hard :game-id (:game-id state)})]
         (should= expected (sut/process-input state))))
     )
   )
