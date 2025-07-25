@@ -1,13 +1,32 @@
 (ns serve-ttt.test-helper
   (:require [tic-tac-toe.core :as core]))
 
-(def mock-db (atom nil))
+(def mock-db (atom {}))
 
-(defmethod core/save-game :mock [state] (reset! mock-db state))
-(defmethod core/load-game :mock [state] (if (nil? @mock-db)
-                                          state
-                                          (assoc @mock-db :status :found-save)))
-(defmethod core/delete-save :mock [_] (reset! mock-db nil))
+(defmethod core/save-game :mock [state]
+  (let [game-id (or (:game-id state) (inc (count @mock-db)))
+        saved-state (assoc state :game-id game-id)]
+    (swap! mock-db assoc game-id saved-state)
+    saved-state))
+
+(defmethod core/load-game :mock [state]
+  (if-let [game-id (:game-id state)]
+    (if-let [saved-game (get @mock-db game-id)]
+      (assoc saved-game :interface (:interface state))
+      (core/save-game (core/initial-state {:interface (:interface state) :save :mock})))
+    (if-let [in-progress-game (->> @mock-db
+                                   vals(filter #(= (:status %) :in-progress))
+                                   (sort-by :game-id)
+                                   last)]
+      (assoc in-progress-game :status :found-save :interface (:interface state))
+      (core/save-game (core/initial-state {:interface (:interface state) :sae :mock})))))
+
+;(defmethod core/load-game :mock [state] (if (nil? @mock-db)
+;                                          state
+;                                          (assoc @mock-db :status :found-save)))
+
+
+(defmethod core/delete-save :mock [_] (reset! mock-db {}))
 
 (defn state-create [{:keys [interface board active-player-index status x-type o-type x-difficulty o-difficulty cells save response]
                      :or   {board               nil

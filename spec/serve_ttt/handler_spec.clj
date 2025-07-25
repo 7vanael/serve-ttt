@@ -41,9 +41,15 @@
                                                {:character "O" :play-type nil :difficulty nil}]
                          :save                :mock})
 
+(defn extract-cookie-value [cookies cookie-name]
+  (when-let [cookie (first (filter #(str/includes? % (str cookie-name "=")) cookies))]
+    (let [value-part (second (str/split cookie #"="))]
+      (first (str/split value-part #";")))))
+
 (describe "handler for web"
   (with-stubs)
-  (before (reset! helper/mock-db nil))
+  (before (reset! helper/mock-db {}))
+  (around [it] (binding [sut/*save-method* :mock] (it)))
 
   (context "form data"
     (it "returns a map of form input"
@@ -52,89 +58,6 @@
     (it "can parse more than one form input"
       (let [request (mock-request "POST" "/test" :body (.getBytes "key1=value1&key2=value2"))]
         (should= {"key1" "value1" "key2" "value2"} (sut/get-form-data request))))
-    )
-
-  (context "board as a cookie/string"
-    (it "converts a board to a string"
-      (should= board3-str (sut/grid->string board3))
-      (should= board4-str (sut/grid->string board4))
-      (should= board27-str (sut/grid->string board27)))
-    (it "converts a string board back into a complex vector"
-      (should= board3 (sut/string->grid board3-str))
-      (should= board4 (sut/string->grid board4-str))
-      (should= board27 (sut/string->grid board27-str)))
-    )
-
-  (context "state to map (later to be cookies)"
-    (it "creates a map that reflects the current state"
-      (let [state   {:interface           :web
-                     :board               board3
-                     :active-player-index 0
-                     :status              :in-progress
-                     :players             [{:character "X" :play-type :computer :difficulty :easy}
-                                           {:character "O" :play-type :computer :difficulty :hard}]
-                     :save                :mock}
-            cookies (sut/state->cookies state)]
-        (should= "web" (get cookies "interface"))
-        (should= board3-str (get cookies "board"))
-        (should= "0" (get cookies "active-player-index"))
-        (should= "in-progress" (get cookies "status"))
-        (should= "mock" (get cookies "save"))
-        (should= "computer" (get cookies "x-type"))
-        (should= "computer" (get cookies "o-type"))
-        (should= "easy" (get cookies "x-difficulty"))
-        (should= "hard" (get cookies "o-difficulty"))))
-
-    (it "allows for nil values in state when making cookies"
-      (let [state   mock-initial-state
-            cookies (sut/state->cookies state)]
-        (should= "welcome" (get cookies "status"))
-        (should-be-nil (get cookies "x-difficulty"))
-        (should-be-nil (get cookies "x-type"))
-        (should-be-nil (get cookies "o-difficulty"))
-        (should-be-nil (get cookies "o-type"))))
-    )
-
-  (context "state from cookies"
-    (it "updates the state according to the cookies"
-      (let [cookies {"status"              "in-progress"
-                     "interface"           "web"
-                     "save"                "sql"
-                     "active-player-index" "0"
-                     "x-type"              "computer"
-                     "o-type"              "computer"
-                     "o-difficulty"        "hard"
-                     "x-difficulty"        "easy"
-                     "board"               board3-str}
-            state   (sut/cookies->state cookies)]
-        (should= :in-progress (:status state))
-        (should= 0 (:active-player-index state))
-        (should= :web (:interface state))
-        (should= :computer (get-in state [:players 0 :play-type]))
-        (should= :easy (get-in state [:players 0 :difficulty]))
-        (should= :computer (get-in state [:players 1 :play-type]))
-        (should= :hard (get-in state [:players 1 :difficulty]))
-        (should= board3 (:board state))))
-
-    (it "allows for nil values and still provides a complete state"
-      (let [cookies {"status"              "in-progress"
-                     "interface"           "web"
-                     "save"                "sql"
-                     "active-player-index" "0"
-                     "x-type"              nil
-                     "o-type"              nil
-                     "o-difficulty"        nil
-                     "x-difficulty"        nil
-                     "board"               nil}
-            state   (sut/cookies->state cookies)]
-        (should= :in-progress (:status state))
-        (should= 0 (:active-player-index state))
-        (should= :web (:interface state))
-        (should-be-nil (get-in state [:players 0 :play-type]))
-        (should-be-nil (get-in state [:players 0 :difficulty]))
-        (should-be-nil (get-in state [:players 1 :play-type]))
-        (should-be-nil (get-in state [:players 1 :difficulty]))
-        (should-be-nil (:board state))))
     )
 
   (context "adding form data to state"
@@ -147,31 +70,55 @@
             state   (sut/get-game-from-request request)]
         (should-be-nil (:response state))))
     )
+
   (context "POST handler"
     (it "processes POST request and returns redirect "
-      (with-redefs [ttt-core/load-game (fn [state & _] state)]
-        (let [request  (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
-              handler  (TttPostHandler.)
-              response (.handle handler request)]
-          (should= 302 (.getStatusCode response))
-          (should= "/ttt/view" (get (.getHeaders response) "Location"))
-          (should-contain "Redirecting" (String. (.getBody response)))
-          (should (some #(str/includes? % "status=config-x-type") (.getCookies response))))))
-
-    (it "sets cookies from updated state"
-      (let [state    {:status :config-x-type :save :mock :interface :web :response :human}
-            response (sut/handle-request state)
-            cookies  (.getCookies response)]
-        (should (some #(str/includes? % "status=config-o-type") cookies))))
-
-    (it "handles form data correctly"
-      (let [request  (mock-request "POST" "/ttt"
-                                   :cookies {"status" "config-x-type"}
-                                   :body (.getBytes "x-type=human"))
+      (let [request  (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
             handler  (TttPostHandler.)
             response (.handle handler request)]
         (should= 302 (.getStatusCode response))
-        (should (some #(str/includes? % "x-type") (.getCookies response)))))
+        (should= "/ttt/view" (get (.getHeaders response) "Location"))
+        (should-contain "Redirecting" (String. (.getBody response)))
+        (should (some #(str/includes? % "game-id=") (.getCookies response)))))
+
+    (it "creates new game when no game-id cookie present"
+      (let [request        (mock-request "POST" "/ttt" :body (.getBytes "new-game=start"))
+            handler        (TttPostHandler.)
+            response       (.handle handler request)
+            cookies        (.getCookies response)
+            game-id-cookie (first (filter #(str/includes? % "game-id=") cookies))]
+        (should-not-be-nil game-id-cookie)
+        (let [cookie-value (second (str/split game-id-cookie #"="))
+              game-id      (Integer/parseInt (first (str/split cookie-value #";")))
+              loaded-state (ttt-core/load-game {:save :mock :interface :web :game-id game-id})]
+          (should= :welcome (:status loaded-state)))))
+
+    (it "Response includes cookie with game-id"
+      (let [state    {:status :config-x-type :save :mock :interface :web :response :human :game-id 6}
+            response (sut/handle-request state)
+            cookies  (.getCookies response)]
+        (should (some #(str/includes? % "game-id=") cookies))))
+
+    (it "handles form data correctly and successfully updates the saved state"
+      (let [initial-state {:status  :config-x-type :save :mock :interface :web
+                           :players [{:character "X" :play-type nil :difficulty nil}
+                                     {:character "O" :play-type nil :difficulty nil}]}
+            saved-state   (ttt-core/save-game initial-state)
+            game-id       (:game-id saved-state)
+            request       (mock-request "POST" "/ttt"
+                                        :cookies {"game-id" (str game-id)}
+                                        :body (.getBytes "x-type=human"))
+            handler       (TttPostHandler.)
+            response      (.handle handler request)
+            cookies       (.getCookies response)
+            game-id-str   (extract-cookie-value cookies "game-id")
+            _             (prn "game-id-str:" game-id-str)
+            updated-state (ttt-core/load-game {:save :mock :interface :web :game-id game-id})]
+
+        (prn "updated-state:" updated-state)
+        (should= (str game-id) game-id-str)
+        (should= :human (get-in updated-state [:players 0 :play-type]))
+        (should= :config-o-type (:status updated-state))))
 
     (it "full process test POST; implementable handler that creates a redirect response from a Post request"
       (with-redefs [ttt-core/initial-state (fn [state] (merge {:interface           :web
@@ -193,6 +140,26 @@
 
 
   (context "GET (view) handler "
+    (it "loads existing game when game-id cookie present"
+      (let [existing-state {:status :in-progress :board [["X" 2 3] [4 5 6] [7 8 9]] :save :mock :interface :web}
+            saved-state    (ttt-core/save-game existing-state)
+            game-id        (:game-id saved-state)
+            request        (mock-request "GET" "/ttt/view" :cookies {"game-id" (str game-id)})
+            handler        (TttViewHandler.)
+            response       (.handle handler request)]
+        (should= 200 (.getStatusCode response))
+        (should-contain "X" (String. (.getBody response)))))
+
+    (it "loads existing game when game-id cookie present"
+      (let [existing-state {:status :in-progress :board [["X" 2 3] [4 5 6] [7 8 9]] :save :mock :interface :web}
+            saved-state    (ttt-core/save-game existing-state)
+            game-id        (:game-id saved-state)
+            request        (mock-request "GET" "/ttt/view" :cookies {"game-id" (str game-id)})
+            handler        (TttViewHandler.)
+            response       (.handle handler request)]
+        (should= 200 (.getStatusCode response))
+        (should-contain "X" (String. (.getBody response)))))
+
     (it "generates HTML response from cookie state"
       (let [request  (mock-request "GET" "/ttt/view"
                                    :cookies {"status" "config-x-type", "interface" "web", "save" "mock"})
@@ -230,7 +197,7 @@
         (should= "Redirecting" (String. (.getBody response)))
         (should-contain "Location" (keys headers))))
 
-    (it "creates a response object including cookies that capture the state"
+    (it "creates a response object including game-id cookie"
       (let [state    {:interface           :web
                       :board               board3
                       :active-player-index 0
@@ -238,13 +205,15 @@
                       :players             [{:character "X" :play-type :computer :difficulty :easy}
                                             {:character "O" :play-type :computer :difficulty :hard}]
                       :save                :mock}
+            saved-state (core/save-game state)
             html     "<html>Test Body</html>"
-            response (sut/generate-response html state)
+            response (sut/generate-get-response html saved-state)
+            id (:game-id saved-state)
             headers  (.getHeaders response)
             cookies  (.getCookies response)]
         (should= "text/html" (get headers "Content-Type"))
         (should= html (String. (.getBody response)))
-        (should (some #(str/includes? % "status=in-progress") cookies))
-        (should= 9 (count cookies))))
+        (should (some #(str/includes? % (str "game-id="id)) cookies))
+        (should= 1 (count cookies))))
     )
   )

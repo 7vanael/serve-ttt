@@ -37,7 +37,6 @@
 
 (defn process-input [state]
   (case (:status state)
-  :welcome (core/maybe-load-save state)
   :found-save (found-save state)
   :config-x-type (core/config-x-type state)
   :config-x-difficulty (core/config-x-difficulty state)
@@ -46,4 +45,5 @@
   :select-board (select-board state)
   :in-progress (in-progress state)
   :tie (play-again state)
-  :winner (play-again state)))
+  :winner (play-again state)
+  (core/maybe-load-save state)))
