@@ -57,7 +57,7 @@
        "<h1>Welcome to Tic-Tac-Toe!</h1>"
        "<p>Let's set up your game.</p>"
        "<form method='POST' action='/ttt'>"
-       "<button type='submit' name='new-game' value='start' class='action-button'>Setup New Game</button>"
+       "<button type='submit' name='new-game' value='fresh' class='action-button'>Setup New Game</button>"
        "<button type='submit' name='load-game' value='load' class='action-button'>Load Previous Game</button>"
        "</form>"
        "</body></html>"))

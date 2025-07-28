@@ -15,6 +15,7 @@
 
 (def router (doto (Router. server-name)
               (.addRoute "GET" "/ttt/view" (TttViewHandler.))
+              (.addRoute "GET" "/ttt" (TttViewHandler.))
               (.addRoute "GET" "/" (FileHandler. root-path core/server-name))
               (.addRoute "GET" "/*" (FileHandler. root-path core/server-name))
               (.addRoute "POST" "/*" (TttPostHandler.))))

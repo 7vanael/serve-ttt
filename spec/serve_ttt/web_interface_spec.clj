@@ -17,17 +17,19 @@
     )
 
   (context "update-state for found-save status"
-    (it "moves to config-x-type when form-data {load-game load}"
+    (it "resumes play of the loaded game (status = in-progress) when response = start"
       (let [state  (helper/state-create {:interface :web :status :found-save :response :load :save :mock
                                          :x-type    :human :o-type :computer :o-difficulty :medium :board [[1 2 "X"] [4 "O" 6] [7 8 9]]})
             result (sut/process-input state)]
-        (should= result (assoc state :status :in-progress))))
+        (should= result (assoc state :status :in-progress))
+        (should= (:board state) (:board result))))
 
-    (it "resumes play of the loaded game (status = in-progress) when response = start"
-      (let [state  (helper/state-create {:interface :web :status :found-save :response :start :save :mock
+    (it "moves to config-x-type when form-data {load-game load}"
+      (let [state  (helper/state-create {:interface :web :status :found-save :response :fresh :save :mock
                                          :x-type    :human :o-type :computer :o-difficulty :medium :board [[1 2 "X"] [4 "O" 6] [7 8 9]]})
             result (sut/process-input state)]
-        (should= result (core/fresh-start {:interface :web :save :mock}))))
+        (should= result (core/fresh-start {:interface :web :save :mock}))
+        (should-be-nil (:board result))))
     )
 
 
@@ -190,4 +192,8 @@
                                            :interface           :web :x-difficulty :hard :game-id (:game-id state)})]
         (should= expected (sut/process-input state))))
     )
+
+  (it "can tell if a keyword resolves to a number"
+    (should (sut/isNumber? :3))
+    (should-not (sut/isNumber? :start)))
   )

@@ -93,8 +93,7 @@
               loaded-state (ttt-core/load-game {:save :mock :interface :web :game-id game-id})]
           (should= :config-x-type (:status loaded-state)))))
 
-    ;This is where the bug likely is- this isn't a post that's coming through
-    (it "offers to load a game when no game-id cookie present and a save is found"
+    (it "offers to load a game when no game-id cookie present and a save is found (does not try to load a completed game)"
       (let [first-save     (core/save-game (helper/state-create {:status              :in-progress :board [["O" "X" 3] [4 "X" 6] [7 8 9]]
                                                                  :x-type              :human :o-type :computer :o-difficulty :medium
                                                                  :active-player-index 1}))
@@ -108,7 +107,6 @@
             game-id-cookie (first (filter #(str/includes? % "game-id=") cookies))
             cookie-value   (second (str/split game-id-cookie #"="))
             game-id        (Integer/parseInt (first (str/split cookie-value #";")))
-            _              (prn "game-id:" game-id)
             loaded-state   (ttt-core/load-game {:save :mock :interface :web :game-id game-id})]
         (should-not-be-nil game-id-cookie)
         (should= :found-save (:status loaded-state))
